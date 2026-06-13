@@ -1,0 +1,48 @@
+const express = require('express');
+const { all, get } = require('../db/database');
+
+const router = express.Router();
+
+router.get('/', async (req, res, next) => {
+  try {
+    const rows = await all('SELECT * FROM organizations ORDER BY organization_name');
+    res.json(rows);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/leaderboard', async (req, res, next) => {
+  try {
+    const rows = await all('SELECT * FROM v_organization_performance ORDER BY total_attendance DESC, avg_rating DESC LIMIT 20');
+    res.json(rows);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/:id/report', async (req, res, next) => {
+  try {
+    const organization = await get('SELECT * FROM v_organization_performance WHERE organization_id = ?', [req.params.id]);
+    if (!organization) return res.status(404).json({ error: 'Organization not found' });
+    const events = await all(`
+      SELECT event_id, event_name, event_category, event_date, attended_count, attendance_rate, avg_rating, cost_per_attendee
+      FROM v_event_performance
+      WHERE organization_id = ?
+      ORDER BY event_date DESC
+      LIMIT 50
+    `, [req.params.id]);
+    const categoryBreakdown = await all(`
+      SELECT event_category, COUNT(*) AS event_count, SUM(attended_count) AS attended, ROUND(AVG(attendance_rate), 2) AS avg_attendance_rate
+      FROM v_event_performance
+      WHERE organization_id = ?
+      GROUP BY event_category
+      ORDER BY attended DESC
+    `, [req.params.id]);
+    res.json({ organization, category_breakdown: categoryBreakdown, recent_events: events });
+  } catch (error) {
+    next(error);
+  }
+});
+
+module.exports = router;

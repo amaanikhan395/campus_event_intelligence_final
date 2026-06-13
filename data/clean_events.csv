@@ -1,0 +1,2 @@
+event_name,organization_name,organization_type,building_name,room_name,campus_zone,capacity,event_category,event_date,start_time,end_time,expected_attendance,registered_count,attended_count,planned_budget,actual_spend,rating,feedback_comment,no_show_count,attendance_rate,room_utilization_rate,budget_variance,cost_per_attendee
+Resume Review Night,Career Services,Career Services,Career Center,Interview Suite,College Ave,60,Career,2025-02-10,17:00,19:00,55,70,52,700,810,5,Great practical feedback,18,74.29,86.67,110,15.58

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Campus Event Intelligence Platform</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav>
+      <div class="brand">CEI</div>
+      <a href="/api/health" target="_blank">API Health</a>
+      <a href="/api/exports/events.csv" target="_blank">Export CSV</a>
+    </nav>
+    <section class="hero-content">
+      <p class="eyebrow">Campus Event Intelligence Platform</p>
+      <h1>Turn campus event data into scheduling, attendance, and budget decisions.</h1>
+    </section>
+  </header>
+
+  <main>
+    <section class="cards" id="summaryCards"></section>
+
+    <section class="insights" id="insightsPanel"></section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow dark">Search and operational reporting</p>
+          <h2>Event Explorer</h2>
+          <p>Filter by keyword, category, campus zone, status, or date range. Results come directly from the SQL performance view.</p>
+        </div>
+        <div class="filters">
+          <input id="searchInput" placeholder="Search event, org, building" />
+          <select id="categoryFilter"><option value="">All categories</option></select>
+          <select id="zoneFilter"><option value="">All zones</option></select>
+          <select id="statusFilter"><option value="">All statuses</option><option>Completed</option><option>Planned</option><option>Cancelled</option></select>
+          <button id="filterButton">Apply Filters</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th><th>Event</th><th>Organization</th><th>Category</th><th>Location</th><th>Attendance</th><th>Utilization</th><th>Cost / Attendee</th>
+            </tr>
+          </thead>
+          <tbody id="eventsTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="grid two">
+      <div class="panel">
+        <div class="panel-header compact"><h2>Monthly Attendance Trend</h2><span class="pill">SQL aggregate</span></div>
+        <canvas id="trendChart" height="170"></canvas>
+      </div>
+      <div class="panel">
+        <div class="panel-header compact"><h2>Category Mix</h2><span class="pill">Attendance weighted</span></div>
+        <canvas id="categoryChart" height="170"></canvas>
+      </div>
+    </section>
+
+    <section class="grid three">
+      <div class="panel">
+        <h2>Scheduling Recommendations</h2>
+        <div id="gapList" class="list"></div>
+      </div>
+      <div class="panel">
+        <h2>Top Events</h2>
+        <div id="topEvents" class="list"></div>
+      </div>
+      <div class="panel">
+        <h2>Budget Efficiency</h2>
+        <div id="budgetList" class="list"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Data Quality Monitor</h2>
+          <p>Shows issues a real operations team would review before trusting the reporting layer.</p>
+        </div>
+        <span class="pill">dedupe + validation</span>
+      </div>
+      <div class="quality-grid" id="qualityGrid"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

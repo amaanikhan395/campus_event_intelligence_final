@@ -1,0 +1,8 @@
+event_name,organization_name,organization_type,building_name,room_name,campus_zone,capacity,event_category,event_date,start_time,end_time,expected_attendance,registered_count,attended_count,planned_budget,actual_spend,rating,feedback_comment
+ resume review night , career services,Career Services,Career Center,Interview Suite,college avenue,60,career fair,2/10/2025,5:00 PM,7:00 PM,55,70,52,700,810,5, Great practical feedback
+Resume Review Night,Career Services,Career Services,Career Center,Interview Suite,College Ave,60,Career,2025-02-10,17:00,19:00,55,70,52,700,810,5,Duplicate row from second export
+python lab,business analytics club,Student Organization,Library,Training Lab,busch,45,workshop,2025/03/08,14:00,16:00,42,48,41,450,510,4,Helpful but fast paced
+Alumni Panel,Finance Association,Student Organization,Business School,Auditorium 1,Livingston,300,Networking,03-21-2025,6:00 PM,8:00 PM,210,230,188,2600,2400,5,Strong speaker lineup
+Community Cleanup,Student Government,Student Organization,Cook Student Center,Seminar Room,cook douglass,75,community service,2025-04-12,10:00,12:00,65,72,61,500,460,4,Good turnout
+Excel Bootcamp,Accounting Society,Student Organization,Academic Building,Lecture Hall 1180,College Ave,220,Workshop,2025-04-22,15:00,17:00,180,195,150,900,875,4,Useful for internship prep
+Bad Date Event,Honors College,Academic Program,Honors College,East Lounge,College Ave,90,Academic,not a date,15:00,16:00,50,60,44,400,390,3,Invalid date should be removed
