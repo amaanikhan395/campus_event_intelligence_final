@@ -16,8 +16,8 @@ test('events endpoint supports pagination', async () => {
   assert.ok(Array.isArray(res.body.results));
 });
 
-test('analytics summary returns KPI fields', async () => {
+test('analytics summary returns catalog KPI fields', async () => {
   const res = await request(app).get('/api/analytics/summary').expect(200);
-  assert.ok(Object.prototype.hasOwnProperty.call(res.body, 'total_events'));
-  assert.ok(Object.prototype.hasOwnProperty.call(res.body, 'avg_attendance_rate'));
+  assert.ok(Object.prototype.hasOwnProperty.call(res.body, 'verified_source_events'));
+  assert.ok(Object.prototype.hasOwnProperty.call(res.body, 'submitted_events'));
 });

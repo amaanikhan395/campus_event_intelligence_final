@@ -1,64 +1,226 @@
 const { run, all, db } = require('./database');
 
-let seed = 42;
-function random() {
-  seed = (seed * 1664525 + 1013904223) % 4294967296;
-  return seed / 4294967296;
-}
-function randomInt(min, max) {
-  return Math.floor(random() * (max - min + 1)) + min;
-}
-function randomItem(items) {
-  return items[Math.floor(random() * items.length)];
-}
-function pad(value) {
-  return String(value).padStart(2, '0');
-}
-function isoDateFromOffset(offset) {
-  const date = new Date(Date.UTC(2025, 0, 13));
-  date.setUTCDate(date.getUTCDate() + offset);
-  return date.toISOString().slice(0, 10);
-}
-function timeFromHour(hour) {
-  return `${pad(hour)}:00`;
-}
-
 const organizations = [
-  ['Finance Association', 'Student Organization', 'finance@campus.edu'],
-  ['Business Analytics Club', 'Student Organization', 'bait@campus.edu'],
-  ['Career Services', 'Career Services', 'careers@campus.edu'],
-  ['Computer Science Department', 'Department', 'cs@campus.edu'],
-  ['Honors College', 'Academic Program', 'honors@campus.edu'],
-  ['Student Government', 'Student Organization', 'sg@campus.edu'],
-  ['Greek Life Council', 'Greek Life', 'greeklife@campus.edu'],
-  ['Entrepreneurship Society', 'Student Organization', 'startup@campus.edu'],
-  ['Supply Chain Club', 'Student Organization', 'supplychain@campus.edu'],
-  ['Accounting Society', 'Student Organization', 'accounting@campus.edu'],
-  ['Women in Technology', 'Student Organization', 'wit@campus.edu'],
-  ['Data Science Institute', 'Academic Program', 'datascience@campus.edu']
+  ['Rutgers Academic Scheduling and Instructional Space', 'Rutgers Office', 'sched@echo.rutgers.edu'],
+  ['Rutgers University-New Brunswick', 'Rutgers Office', 'events@rutgers.edu'],
+  ['Rutgers Geology Museum', 'Public Event Series', 'geologymuseum@eps.rutgers.edu'],
+  ['Rutgers Career Exploration and Success', 'Rutgers Office', 'careers@rutgers.edu'],
+  ['Student Organization Demo Account', 'Student Organization', 'studentorgs@rutgers.edu']
 ];
 
 const locations = [
-  ['Livingston Student Center', 'Room 202', 'Livingston', 120, 1],
-  ['Business School', 'Auditorium 1', 'Livingston', 300, 1],
-  ['College Avenue Student Center', 'Multipurpose Room', 'College Ave', 180, 1],
-  ['Busch Student Center', 'Conference Room A', 'Busch', 80, 1],
-  ['Academic Building', 'Lecture Hall 1180', 'College Ave', 220, 1],
-  ['Honors College', 'East Lounge', 'College Ave', 90, 1],
-  ['Career Center', 'Interview Suite', 'College Ave', 60, 1],
-  ['Library', 'Training Lab', 'Busch', 45, 1],
-  ['Recreation Center', 'Main Gym', 'Livingston', 500, 1],
-  ['Engineering Building', 'Room B120', 'Busch', 150, 1],
-  ['Cook Student Center', 'Seminar Room', 'Cook/Douglass', 75, 1],
-  ['Virtual Event Space', 'Zoom Webinar', 'Online', 1000, 0]
+  ['Rutgers University', 'Academic Calendar', 'New Brunswick', 0, 0],
+  ['Multiple Campuses', 'Busch, College Ave, Cook/Douglass', 'Multiple Campuses', 0, 0],
+  ['Geology Museum', 'Museum Floor', 'College Ave', 0, 1],
+  ['College Avenue Student Center', 'Multipurpose Room', 'College Ave', 0, 1],
+  ['Busch Student Center', 'Main Hall', 'Busch', 0, 1],
+  ['Livingston Student Center', 'Event Hall', 'Livingston', 0, 1],
+  ['Online', 'Virtual Event', 'Online', 0, 0]
 ];
 
-const categories = ['Career', 'Academic', 'Social', 'Workshop', 'Fundraiser', 'Networking', 'Community Service'];
-const prefixes = ['Resume Review', 'Alumni Panel', 'Case Workshop', 'Excel Bootcamp', 'Python Lab', 'Networking Night', 'Speaker Series', 'Community Cleanup', 'Fundraiser', 'Leadership Training', 'SQL Clinic', 'Interview Prep'];
-const fundingSources = ['Organization Budget', 'Student Affairs Grant', 'Department Budget', 'Corporate Sponsor', 'Ticket Revenue'];
-const positiveComments = ['Strong turnout and practical content.', 'Students said the session was useful.', 'Great speaker quality and smooth check-in.'];
-const neutralComments = ['Good event, but timing could be improved.', 'Content was helpful but room setup was tight.', 'Average turnout with some scheduling conflicts.'];
-const negativeComments = ['Attendance was below expectations.', 'Room was too large for the audience.', 'Several students reported unclear instructions.'];
+const publicEvents = [
+  {
+    event_name: 'Fall Semester Begins',
+    description: 'Official Rutgers 2025-2026 academic calendar date.',
+    org: 'Rutgers Academic Scheduling and Instructional Space',
+    location: 'Rutgers University',
+    event_category: 'Academic',
+    event_date: '2025-09-02', start_time: '08:00', end_time: '17:00',
+    source_url: 'https://scheduling.rutgers.edu/academic-calendar/'
+  },
+  {
+    event_name: 'Fall First 7-Week Minicourse Period Begins',
+    description: 'Official Rutgers 2025-2026 academic calendar date range begins.',
+    org: 'Rutgers Academic Scheduling and Instructional Space',
+    location: 'Rutgers University',
+    event_category: 'Academic',
+    event_date: '2025-09-02', start_time: '08:00', end_time: '17:00',
+    source_url: 'https://scheduling.rutgers.edu/academic-calendar/'
+  },
+  {
+    event_name: 'Fall Second 7-Week Minicourse Period Begins',
+    description: 'Official Rutgers 2025-2026 academic calendar date range begins.',
+    org: 'Rutgers Academic Scheduling and Instructional Space',
+    location: 'Rutgers University',
+    event_category: 'Academic',
+    event_date: '2025-10-21', start_time: '08:00', end_time: '17:00',
+    source_url: 'https://scheduling.rutgers.edu/academic-calendar/'
+  },
+  {
+    event_name: 'Disability Awareness Month at Rutgers',
+    description: 'Rutgers-New Brunswick event category page highlights Disability Awareness Month during October.',
+    org: 'Rutgers University-New Brunswick',
+    location: 'Multiple Campuses',
+    event_category: 'Community',
+    event_date: '2025-10-01', start_time: '09:00', end_time: '17:00',
+    source_url: 'https://newbrunswick.rutgers.edu/events/disability-awareness-month-rutgers'
+  },
+  {
+    event_name: 'Thanksgiving Recess Begins',
+    description: 'Official Rutgers 2025-2026 academic calendar no-class period begins.',
+    org: 'Rutgers Academic Scheduling and Instructional Space',
+    location: 'Rutgers University',
+    event_category: 'Academic',
+    event_date: '2025-11-27', start_time: '00:00', end_time: '23:59',
+    source_url: 'https://scheduling.rutgers.edu/academic-calendar/'
+  },
+  {
+    event_name: 'Regular Fall Classes End',
+    description: 'Official Rutgers 2025-2026 academic calendar date.',
+    org: 'Rutgers Academic Scheduling and Instructional Space',
+    location: 'Rutgers University',
+    event_category: 'Academic',
+    event_date: '2025-12-10', start_time: '08:00', end_time: '17:00',
+    source_url: 'https://scheduling.rutgers.edu/academic-calendar/'
+  },
+  {
+    event_name: 'Fall Reading Days Begin',
+    description: 'Official Rutgers 2025-2026 academic calendar no-class reading day period begins.',
+    org: 'Rutgers Academic Scheduling and Instructional Space',
+    location: 'Rutgers University',
+    event_category: 'Academic',
+    event_date: '2025-12-11', start_time: '08:00', end_time: '17:00',
+    source_url: 'https://scheduling.rutgers.edu/academic-calendar/'
+  },
+  {
+    event_name: 'Fall Exams Begin',
+    description: 'Official Rutgers 2025-2026 academic calendar exam period begins.',
+    org: 'Rutgers Academic Scheduling and Instructional Space',
+    location: 'Rutgers University',
+    event_category: 'Academic',
+    event_date: '2025-12-15', start_time: '08:00', end_time: '17:00',
+    source_url: 'https://scheduling.rutgers.edu/academic-calendar/'
+  },
+  {
+    event_name: 'Winter Session Begins',
+    description: 'Official Rutgers 2025-2026 academic calendar Winter Session begins.',
+    org: 'Rutgers Academic Scheduling and Instructional Space',
+    location: 'Rutgers University',
+    event_category: 'Academic',
+    event_date: '2025-12-22', start_time: '08:00', end_time: '17:00',
+    source_url: 'https://scheduling.rutgers.edu/academic-calendar/'
+  },
+  {
+    event_name: 'January Intersession Begins',
+    description: 'Official Rutgers 2025-2026 academic calendar January Intersession begins.',
+    org: 'Rutgers Academic Scheduling and Instructional Space',
+    location: 'Rutgers University',
+    event_category: 'Academic',
+    event_date: '2026-01-05', start_time: '08:00', end_time: '17:00',
+    source_url: 'https://scheduling.rutgers.edu/academic-calendar/'
+  },
+  {
+    event_name: 'Spring Semester Begins',
+    description: 'Official Rutgers 2025-2026 academic calendar date.',
+    org: 'Rutgers Academic Scheduling and Instructional Space',
+    location: 'Rutgers University',
+    event_category: 'Academic',
+    event_date: '2026-01-20', start_time: '08:00', end_time: '17:00',
+    source_url: 'https://scheduling.rutgers.edu/academic-calendar/'
+  },
+  {
+    event_name: 'Spring First 7-Week Minicourse Period Begins',
+    description: 'Official Rutgers 2025-2026 academic calendar date range begins.',
+    org: 'Rutgers Academic Scheduling and Instructional Space',
+    location: 'Rutgers University',
+    event_category: 'Academic',
+    event_date: '2026-01-20', start_time: '08:00', end_time: '17:00',
+    source_url: 'https://scheduling.rutgers.edu/academic-calendar/'
+  },
+  {
+    event_name: 'Spring Second 7-Week Minicourse Period Begins',
+    description: 'Official Rutgers 2025-2026 academic calendar date range begins.',
+    org: 'Rutgers Academic Scheduling and Instructional Space',
+    location: 'Rutgers University',
+    event_category: 'Academic',
+    event_date: '2026-03-10', start_time: '08:00', end_time: '17:00',
+    source_url: 'https://scheduling.rutgers.edu/academic-calendar/'
+  },
+  {
+    event_name: 'Spring Recess Begins',
+    description: 'Official Rutgers 2025-2026 academic calendar no-class period begins.',
+    org: 'Rutgers Academic Scheduling and Instructional Space',
+    location: 'Rutgers University',
+    event_category: 'Academic',
+    event_date: '2026-03-14', start_time: '00:00', end_time: '23:59',
+    source_url: 'https://scheduling.rutgers.edu/academic-calendar/'
+  },
+  {
+    event_name: 'Rutgers Day 2026',
+    description: 'Rutgers Day is scheduled for Saturday, April 25, 2026, 10 a.m.-4 p.m., across Busch, College Avenue, and Cook/Douglass campuses.',
+    org: 'Rutgers University-New Brunswick',
+    location: 'Multiple Campuses',
+    event_category: 'Campus Life',
+    event_date: '2026-04-25', start_time: '10:00', end_time: '16:00',
+    source_url: 'https://newbrunswick.rutgers.edu/events/campus-life'
+  },
+  {
+    event_name: 'Regular Spring Classes End',
+    description: 'Official Rutgers 2025-2026 academic calendar date.',
+    org: 'Rutgers Academic Scheduling and Instructional Space',
+    location: 'Rutgers University',
+    event_category: 'Academic',
+    event_date: '2026-05-04', start_time: '08:00', end_time: '17:00',
+    source_url: 'https://scheduling.rutgers.edu/academic-calendar/'
+  },
+  {
+    event_name: 'Spring Reading Days Begin',
+    description: 'Official Rutgers 2025-2026 academic calendar no-class reading day period begins.',
+    org: 'Rutgers Academic Scheduling and Instructional Space',
+    location: 'Rutgers University',
+    event_category: 'Academic',
+    event_date: '2026-05-05', start_time: '08:00', end_time: '17:00',
+    source_url: 'https://scheduling.rutgers.edu/academic-calendar/'
+  },
+  {
+    event_name: 'Late Night: Prehistoric Creatures May 2026',
+    description: 'Rutgers Geology Museum event listed for May 7, 2026 from 4:00 PM to 8:00 PM at the Geology Museum.',
+    org: 'Rutgers Geology Museum',
+    location: 'Geology Museum',
+    event_category: 'Campus Life',
+    event_date: '2026-05-07', start_time: '16:00', end_time: '20:00',
+    source_url: 'https://eps.rutgers.edu/about-us/event-details/1649-late-nigh-prehistoric-creature'
+  },
+  {
+    event_name: 'Spring Exams Begin',
+    description: 'Official Rutgers 2025-2026 academic calendar exam period begins.',
+    org: 'Rutgers Academic Scheduling and Instructional Space',
+    location: 'Rutgers University',
+    event_category: 'Academic',
+    event_date: '2026-05-07', start_time: '08:00', end_time: '17:00',
+    source_url: 'https://scheduling.rutgers.edu/academic-calendar/'
+  },
+  {
+    event_name: 'Rutgers-New Brunswick and Rutgers Health Commencement',
+    description: 'Official Rutgers 2025-2026 academic calendar commencement date.',
+    org: 'Rutgers Academic Scheduling and Instructional Space',
+    location: 'Rutgers University',
+    event_category: 'Commencement',
+    event_date: '2026-05-17', start_time: '10:00', end_time: '13:00',
+    source_url: 'https://scheduling.rutgers.edu/academic-calendar/'
+  }
+];
+
+const demoStudentEvents = [
+  {
+    event_name: 'Student Organization Showcase Demo',
+    description: 'Example of a student-submitted listing. Replace this with a real user-created event through the dashboard.',
+    org: 'Student Organization Demo Account',
+    location: 'College Avenue Student Center',
+    event_category: 'Student Organization',
+    event_date: '2026-02-18', start_time: '18:00', end_time: '20:00',
+    source_system: 'user_submitted_demo'
+  },
+  {
+    event_name: 'Rutgers Career Prep Demo Event',
+    description: 'Example submission showing how organizations can publish events into the catalog.',
+    org: 'Student Organization Demo Account',
+    location: 'Livingston Student Center',
+    event_category: 'Careers & Entrepreneurship',
+    event_date: '2026-03-26', start_time: '19:00', end_time: '20:30',
+    source_system: 'user_submitted_demo'
+  }
+];
 
 async function insertLookupData() {
   for (const org of organizations) {
@@ -69,77 +231,49 @@ async function insertLookupData() {
   }
 }
 
-function buildEventName(index, category) {
-  const prefix = randomItem(prefixes);
-  const term = index % 3 === 0 ? 'Spring' : index % 3 === 1 ? 'Fall' : 'Mid-Semester';
-  return `${prefix}: ${category} ${term} ${index + 1}`;
+async function orgId(name) {
+  const row = await all('SELECT organization_id FROM organizations WHERE organization_name = ?', [name]);
+  return row[0].organization_id;
 }
 
-async function insertEvents() {
-  const orgRows = await all('SELECT * FROM organizations');
-  const locationRows = await all('SELECT * FROM locations');
-
-  for (let i = 0; i < 720; i += 1) {
-    const category = randomItem(categories);
-    const org = randomItem(orgRows);
-    const location = randomItem(locationRows);
-    const eventDate = isoDateFromOffset(i % 310);
-    const startHour = randomItem([9, 10, 11, 12, 14, 15, 16, 17, 18, 19]);
-    const duration = randomItem([1, 1, 1, 2, 2, 3]);
-    const capacity = location.capacity;
-    const expected = Math.max(15, Math.min(capacity, Math.round(capacity * (0.25 + random() * 0.65))));
-    const registered = Math.max(0, Math.round(expected * (0.7 + random() * 0.7)));
-    const attended = Math.max(0, Math.min(registered, Math.round(registered * (0.55 + random() * 0.4))));
-    const waitlist = registered > capacity ? randomInt(3, 35) : randomInt(0, 8);
-    const plannedBudget = Number((randomInt(150, 5000) + expected * randomInt(3, 12)).toFixed(2));
-    const actualSpend = Number((plannedBudget * (0.75 + random() * 0.55)).toFixed(2));
-    const status = i % 37 === 0 ? 'Cancelled' : i % 11 === 0 ? 'Planned' : 'Completed';
-
-    const eventResult = await run(
-      `INSERT INTO events
-        (event_name, organization_id, location_id, event_category, event_date, start_time, end_time, expected_attendance, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [buildEventName(i, category), org.organization_id, location.location_id, category, eventDate, timeFromHour(startHour), timeFromHour(startHour + duration), expected, status]
-    );
-
-    await run(
-      'INSERT INTO attendance (event_id, registered_count, attended_count, waitlist_count) VALUES (?, ?, ?, ?)',
-      [eventResult.id, registered, status === 'Cancelled' ? 0 : attended, waitlist]
-    );
-
-    await run(
-      'INSERT INTO budgets (event_id, planned_budget, actual_spend, funding_source, cost_center) VALUES (?, ?, ?, ?, ?)',
-      [eventResult.id, plannedBudget, status === 'Cancelled' ? 0 : actualSpend, randomItem(fundingSources), `CC-${1000 + org.organization_id}`]
-    );
-
-    const feedbackCount = status === 'Completed' ? randomInt(1, 5) : 0;
-    for (let j = 0; j < feedbackCount; j += 1) {
-      const rating = randomInt(2, 5);
-      const sentiment = rating >= 4 ? 'Positive' : rating === 3 ? 'Neutral' : 'Negative';
-      const comments = sentiment === 'Positive' ? positiveComments : sentiment === 'Neutral' ? neutralComments : negativeComments;
-      await run(
-        'INSERT INTO feedback (event_id, rating, sentiment, comment) VALUES (?, ?, ?, ?)',
-        [eventResult.id, rating, sentiment, randomItem(comments)]
-      );
-    }
-  }
+async function locationId(name) {
+  const row = await all('SELECT location_id FROM locations WHERE building_name = ?', [name]);
+  return row[0].location_id;
 }
 
-async function seedDb() {
+async function insertEvent(event, status = 'Published') {
+  const result = await run(
+    `INSERT INTO events
+      (event_name, description, organization_id, location_id, event_category, event_date, start_time, end_time, status, source_system, source_url)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      event.event_name,
+      event.description,
+      await orgId(event.org),
+      await locationId(event.location),
+      event.event_category,
+      event.event_date,
+      event.start_time,
+      event.end_time,
+      status,
+      event.source_system || 'rutgers_public_source',
+      event.source_url || null
+    ]
+  );
+  await run('INSERT INTO attendance (event_id, registered_count, attended_count, waitlist_count) VALUES (?, 0, 0, 0)', [result.id]);
+  await run('INSERT INTO budgets (event_id, planned_budget, actual_spend) VALUES (?, 0, 0)', [result.id]);
+}
+
+async function main() {
   await insertLookupData();
-  await insertEvents();
-  const summary = await all('SELECT COUNT(*) AS events FROM events');
-  console.log(`Seed complete: ${summary[0].events} events inserted.`);
+  for (const event of publicEvents) await insertEvent(event, 'Published');
+  for (const event of demoStudentEvents) await insertEvent(event, 'Submitted');
+  console.log(`Seed complete: ${publicEvents.length} verified Rutgers records and ${demoStudentEvents.length} demo submissions inserted.`);
+  db.close();
 }
 
-if (require.main === module) {
-  seedDb()
-    .then(() => db.close())
-    .catch((error) => {
-      console.error('Seed failed:', error.message);
-      db.close();
-      process.exit(1);
-    });
-}
-
-module.exports = seedDb;
+main().catch((error) => {
+  console.error('Seed failed:', error.message);
+  db.close();
+  process.exit(1);
+});

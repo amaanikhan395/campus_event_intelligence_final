@@ -14,15 +14,14 @@ function csvEscape(value) {
 router.get('/events.csv', async (req, res, next) => {
   try {
     const { whereSql, params } = buildEventFilters(req.query);
-    const rows = await all(`SELECT * FROM v_event_performance ${whereSql} ORDER BY event_date DESC, start_time DESC`, params);
+    const rows = await all(`SELECT * FROM v_event_catalog ${whereSql} ORDER BY event_date ASC, start_time ASC`, params);
     const headers = [
-      'event_id', 'event_name', 'organization_name', 'event_category', 'event_date', 'start_time', 'campus_zone',
-      'capacity', 'registered_count', 'attended_count', 'attendance_rate', 'room_utilization_rate', 'actual_spend',
-      'cost_per_attendee', 'avg_rating', 'status'
+      'event_id', 'event_name', 'event_category', 'event_date', 'start_time', 'end_time',
+      'organization_name', 'building_name', 'campus_zone', 'status', 'source_system', 'source_url'
     ];
     const csv = [headers.join(','), ...rows.map((row) => headers.map((header) => csvEscape(row[header])).join(','))].join('\n');
     res.header('Content-Type', 'text/csv');
-    res.attachment('campus_event_export.csv');
+    res.attachment('rutgers_event_catalog.csv');
     res.send(csv);
   } catch (error) {
     next(error);

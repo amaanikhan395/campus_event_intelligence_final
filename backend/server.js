@@ -8,6 +8,7 @@ const eventsRouter = require('./routes/events');
 const analyticsRouter = require('./routes/analytics');
 const organizationsRouter = require('./routes/organizations');
 const exportsRouter = require('./routes/exports');
+const authRouter = require('./routes/auth');
 const { notFound, errorHandler } = require('./middleware/errors');
 
 function createApp() {
@@ -22,6 +23,7 @@ function createApp() {
     res.json({ status: 'ok', project: 'Campus Event Intelligence Platform', version: '2.0.0' });
   });
 
+  app.use('/api/auth', authRouter);
   app.use('/api/events', eventsRouter);
   app.use('/api/analytics', analyticsRouter);
   app.use('/api/organizations', organizationsRouter);

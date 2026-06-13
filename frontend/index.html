@@ -3,132 +3,114 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rutgers Campus Event Intelligence Platform</title>
+  <title>Rutgers Campus Event Intelligence</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="hero">
-    <nav class="top-nav">
-      <a class="brand-lockup" href="/" aria-label="Rutgers Campus Event Intelligence home">
-        <span class="rutgers-r">R</span>
-        <span>
-          <strong>Rutgers Events</strong>
-          <small>Campus Intelligence</small>
-        </span>
-      </a>
+    <nav class="nav">
+      <div class="brand">
+        <div class="r-mark">R</div>
+        <div><strong>Rutgers Events</strong><span>Campus Intelligence</span></div>
+      </div>
       <div class="nav-actions">
-        <a href="/api/health" target="_blank">API Health</a>
-        <a href="/api/exports/events.csv" target="_blank">Export CSV</a>
+        <button class="ghost-button" id="openAccountButton">Create Account</button>
+        <button class="primary-button" id="openPostButton">Post Event</button>
       </div>
     </nav>
 
     <section class="hero-grid">
       <div class="hero-copy">
         <p class="eyebrow">Rutgers Campus Event Intelligence Platform</p>
-        <h1>Turn Rutgers event data into smarter attendance, scheduling, and budget decisions.</h1>
-        <p class="subtitle">A full-stack analytics dashboard built to help student organizations, academic programs, and campus teams understand event performance across Rutgers.</p>
-        <div class="hero-tags">
-          <span>SQL Reporting</span>
-          <span>Python ETL</span>
-          <span>Node.js APIs</span>
-          <span>Rutgers Dashboard</span>
-        </div>
+        <h1>Find, filter, and publish Rutgers events in one clean dashboard.</h1>
+        <p class="hero-subtitle">A full-stack event catalog using verified Rutgers public dates and user-submitted event listings. Built for students, organizations, and campus teams who want one place to discover what is happening across Rutgers.</p>
       </div>
 
-      <aside class="hero-preview" aria-label="Dashboard preview">
-        <div class="preview-topbar">
-          <span></span><span></span><span></span>
-        </div>
-        <div class="preview-body">
-          <div class="preview-sidebar">
-            <div class="preview-logo"><span class="mini-r">R</span> Rutgers</div>
-            <div class="preview-active">Dashboard</div>
-            <div>Events</div>
-            <div>Organizations</div>
-            <div>Budget</div>
-          </div>
-          <div class="preview-main">
-            <div class="preview-kpis">
-              <div><small>Total Events</small><strong>720</strong></div>
-              <div><small>Attendance</small><strong>80.4K</strong></div>
-              <div><small>Avg Rate</small><strong>73.6%</strong></div>
-            </div>
-            <div class="preview-chart"><span></span><span></span><span></span><span></span><span></span><span></span></div>
-            <div class="preview-list"><b>Top Rutgers Events</b><p>Career Services · Networking · Academic Programs</p></div>
-          </div>
-        </div>
-      </aside>
+      <div class="dashboard-preview">
+        <div class="window-dots"><span></span><span></span><span></span></div>
+        <aside>
+          <div class="mini-brand"><span>R</span> Rutgers</div>
+          <strong>Dashboard</strong><p>Events</p><p>Organizations</p><p>Submit</p>
+        </aside>
+        <main>
+          <div class="mini-cards"><div></div><div></div><div></div></div>
+          <div class="mini-chart"><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="mini-row">Verified Rutgers sources + student submissions</div>
+        </main>
+      </div>
     </section>
   </header>
 
-  <main>
+  <main class="container">
     <section class="cards" id="summaryCards"></section>
-
     <section class="insights" id="insightsPanel"></section>
 
-    <section class="panel event-panel">
+    <section class="panel account-panel" id="accountPanel">
+      <div>
+        <p class="eyebrow dark">Student account</p>
+        <h2>Create an account to post events</h2>
+      </div>
+      <form class="account-form" id="accountForm">
+        <input id="fullName" placeholder="Full name" required />
+        <input id="email" type="email" placeholder="Rutgers email" required />
+        <select id="role"><option>Student</option><option>Organization Admin</option><option>Faculty/Staff</option></select>
+        <button type="submit">Create / Sign In</button>
+      </form>
+      <p class="signed-in" id="signedInState"></p>
+    </section>
+
+    <section class="panel submit-panel" id="postPanel">
       <div class="panel-header">
+        <div><p class="eyebrow dark">Post to dashboard</p><h2>Submit a Rutgers event</h2><p>Submitted events appear in the Event Explorer and can be filtered by category, campus zone, status, and keyword.</p></div>
+      </div>
+      <form class="event-form" id="eventForm">
+        <input id="eventName" placeholder="Event name" required />
+        <input id="organizationName" placeholder="Organization name" required />
+        <select id="eventCategory" required></select>
+        <input id="eventDate" type="date" required />
+        <input id="startTime" type="time" required />
+        <input id="endTime" type="time" required />
+        <input id="buildingName" placeholder="Building or location" required />
+        <input id="roomName" placeholder="Room, hall, or area" />
+        <select id="campusZone" required></select>
+        <textarea id="eventDescription" placeholder="Short event description"></textarea>
+        <button type="submit">Submit Event</button>
+      </form>
+      <p class="form-message" id="formMessage"></p>
+    </section>
+
+    <section class="panel event-panel">
+      <div class="panel-header explorer-header">
         <div>
-          <p class="eyebrow dark">Rutgers search and operational reporting</p>
+          <p class="eyebrow dark">Verified Rutgers records + submitted events</p>
           <h2>Event Explorer</h2>
-          <p>Filter Rutgers event records by keyword, category, campus zone, status, or date range. Results come directly from the SQL performance view.</p>
+          <p>The seeded records use Rutgers public academic-calendar and public event pages for the September 2025-May 2026 academic window. </p>
         </div>
         <div class="filters">
-          <input id="searchInput" placeholder="Search event, org, building" />
+          <input id="searchInput" placeholder="Search event, organization, location" />
           <select id="categoryFilter"><option value="">All categories</option></select>
-          <select id="zoneFilter"><option value="">All Rutgers campuses</option></select>
-          <select id="statusFilter"><option value="">All statuses</option><option>Completed</option><option>Planned</option><option>Cancelled</option></select>
+          <select id="zoneFilter"><option value="">All zones</option></select>
+          <select id="statusFilter"><option value="">All statuses</option><option>Published</option><option>Submitted</option><option>Cancelled</option></select>
           <button id="filterButton">Apply Filters</button>
         </div>
       </div>
       <div class="table-wrap">
         <table>
-          <thead>
-            <tr>
-              <th>Date</th><th>Event</th><th>Organization</th><th>Category</th><th>Location</th><th>Attendance</th><th>Utilization</th><th>Cost / Attendee</th>
-            </tr>
-          </thead>
+          <thead><tr><th>Date</th><th>Event</th><th>Organization</th><th>Category</th><th>Location</th><th>Status</th><th>Source</th></tr></thead>
           <tbody id="eventsTable"></tbody>
         </table>
       </div>
     </section>
 
     <section class="grid two">
-      <div class="panel chart-panel">
-        <div class="panel-header compact"><h2>Monthly Attendance Trend</h2><span class="pill">SQL aggregate</span></div>
-        <canvas id="trendChart" height="170"></canvas>
-      </div>
-      <div class="panel chart-panel">
-        <div class="panel-header compact"><h2>Rutgers Event Category Mix</h2><span class="pill">Attendance weighted</span></div>
-        <canvas id="categoryChart" height="170"></canvas>
-      </div>
+      <div class="panel chart-panel"><div class="panel-header compact"><h2>Events by Month</h2><span class="pill">Sep 2025-May 2026</span></div><canvas id="trendChart" height="180"></canvas></div>
+      <div class="panel chart-panel"><div class="panel-header compact"><h2>Category Mix</h2><span class="pill">Event count</span></div><canvas id="categoryChart" height="180"></canvas></div>
     </section>
 
     <section class="grid three">
-      <div class="panel">
-        <h2>Scheduling Recommendations</h2>
-        <div id="gapList" class="list"></div>
-      </div>
-      <div class="panel">
-        <h2>Top Rutgers Events</h2>
-        <div id="topEvents" class="list"></div>
-      </div>
-      <div class="panel">
-        <h2>Budget Efficiency</h2>
-        <div id="budgetList" class="list"></div>
-      </div>
-    </section>
-
-    <section class="panel quality-panel">
-      <div class="panel-header">
-        <div>
-          <p class="eyebrow dark">Trust the reporting layer</p>
-          <h2>Data Quality Monitor</h2>
-          <p>Shows issues a Rutgers operations team would review before relying on the dashboard.</p>
-        </div>
-        <span class="pill">dedupe + validation</span>
-      </div>
-      <div class="quality-grid" id="qualityGrid"></div>
+      <div class="panel"><h2>Upcoming Events</h2><div id="upcomingList" class="list"></div></div>
+      <div class="panel"><h2>Top Organizations</h2><div id="organizationList" class="list"></div></div>
+      <div class="panel"><h2>Source Breakdown</h2><div id="sourceList" class="list"></div></div>
     </section>
   </main>
 

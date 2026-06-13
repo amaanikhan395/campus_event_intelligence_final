@@ -9,9 +9,9 @@ function buildEventFilters(query) {
   const params = [];
 
   if (query.search) {
-    conditions.push('(event_name LIKE ? OR organization_name LIKE ? OR building_name LIKE ? OR room_name LIKE ?)');
+    conditions.push('(event_name LIKE ? OR description LIKE ? OR organization_name LIKE ? OR building_name LIKE ? OR room_name LIKE ?)');
     const term = `%${query.search.trim()}%`;
-    params.push(term, term, term, term);
+    params.push(term, term, term, term, term);
   }
   if (query.category) {
     conditions.push('event_category = ?');
