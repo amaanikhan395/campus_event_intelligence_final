@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rutgers Campus Event Intelligence Platform</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="campus-silhouette" aria-hidden="true">
+      <div class="tower"></div>
+      <div class="building"></div>
+      <div class="trees"></div>
+    </div>
+
+    <nav class="topbar">
+      <a class="brand" href="/" aria-label="Rutgers Campus Event Intelligence Platform home">
+        <span class="brand-mark">R</span>
+        <span>
+          <strong>Rutgers Events</strong>
+          <small>Campus Intelligence</small>
+        </span>
+      </a>
+      <div class="nav-links">
+        <a href="#eventExplorer">Event Explorer</a>
+        <a href="#analytics">Analytics</a>
+        <a href="/api/health" target="_blank">API Health</a>
+        <a class="nav-cta" href="/api/exports/events.csv" target="_blank">Export CSV</a>
+      </div>
+    </nav>
+
+    <section class="hero-content">
+      <p class="eyebrow">Rutgers-inspired event operations dashboard</p>
+      <h1>Rutgers Campus Event Intelligence Platform</h1>
+      <p class="subtitle">A full-stack analytics dashboard that turns student organization, academic, career, and campus life event data into attendance, scheduling, and budget decisions.</p>
+      <div class="hero-actions">
+        <a class="button primary" href="#eventExplorer">Explore Events</a>
+        <a class="button ghost" href="/api/events" target="_blank">View API Data</a>
+      </div>
+      <div class="hero-badges" aria-label="Project capabilities">
+        <span>SQL reporting views</span>
+        <span>Python ETL</span>
+        <span>Express API</span>
+        <span>Live dashboard</span>
+      </div>
+    </section>
+  </header>
+
+  <main>
+    <section class="cards" id="summaryCards" aria-label="Rutgers event summary metrics"></section>
+
+    <section class="insights" id="insightsPanel" aria-label="Operational insights"></section>
+
+    <section class="panel feature-panel" id="eventExplorer">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow dark">Search and operational reporting</p>
+          <h2>Rutgers Event Explorer</h2>
+          <p>Filter live SQL-backed event records by keyword, event type, campus zone, status, and reporting period.</p>
+        </div>
+        <div class="filters">
+          <input id="searchInput" placeholder="Search event, org, building" />
+          <select id="categoryFilter"><option value="">All categories</option></select>
+          <select id="zoneFilter"><option value="">All campus zones</option></select>
+          <select id="statusFilter"><option value="">All statuses</option><option>Completed</option><option>Planned</option><option>Cancelled</option></select>
+          <button id="filterButton">Apply Filters</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th><th>Event</th><th>Organization</th><th>Category</th><th>Location</th><th>Attendance</th><th>Utilization</th><th>Cost / Attendee</th>
+            </tr>
+          </thead>
+          <tbody id="eventsTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="grid two" id="analytics">
+      <div class="panel chart-panel">
+        <div class="panel-header compact"><h2>Attendance Over Time</h2><span class="pill">SQL aggregate</span></div>
+        <canvas id="trendChart" height="190"></canvas>
+      </div>
+      <div class="panel chart-panel">
+        <div class="panel-header compact"><h2>Event Category Mix</h2><span class="pill">Attendance weighted</span></div>
+        <canvas id="categoryChart" height="190"></canvas>
+      </div>
+    </section>
+
+    <section class="grid three">
+      <div class="panel">
+        <h2>Scheduling Recommendations</h2>
+        <p class="section-note">Identify time slots that are strong, weak, or congested across campus programming.</p>
+        <div id="gapList" class="list"></div>
+      </div>
+      <div class="panel">
+        <h2>Top Rutgers Events</h2>
+        <p class="section-note">Highest performing events by attendance and registration conversion.</p>
+        <div id="topEvents" class="list"></div>
+      </div>
+      <div class="panel">
+        <h2>Budget Efficiency</h2>
+        <p class="section-note">Compare cost per attendee across different event categories.</p>
+        <div id="budgetList" class="list"></div>
+      </div>
+    </section>
+
+    <section class="panel quality-panel">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow dark">Data reliability layer</p>
+          <h2>Data Quality Monitor</h2>
+          <p>Flags issues an operations team would review before trusting the reporting layer.</p>
+        </div>
+        <span class="pill">dedupe + validation</span>
+      </div>
+      <div class="quality-grid" id="qualityGrid"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
