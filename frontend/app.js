@@ -28,7 +28,7 @@ function populateSelect(id, values) {
 
 function renderCards(summary) {
   const cards = [
-    ['Total Events', num(summary.total_events)],
+    ['Rutgers Events', num(summary.total_events)],
     ['Total Attendance', num(summary.total_attendance)],
     ['Avg Attendance Rate', pct(summary.avg_attendance_rate)],
     ['Avg Room Utilization', pct(summary.avg_room_utilization)],
@@ -41,10 +41,10 @@ function renderCards(summary) {
 
 function renderInsights(data) {
   const insights = [
-    ['Top attendance driver', `${data.attendance_driver?.event_category || 'n/a'} · ${num(data.attendance_driver?.attended)} attended`],
-    ['Best time slot', `${data.best_time_slot?.hour_slot || 'n/a'} · ${pct(data.best_time_slot?.rate)} avg rate`],
+    ['Top Rutgers attendance driver', `${data.attendance_driver?.event_category || 'n/a'} · ${num(data.attendance_driver?.attended)} attended`],
+    ['Best Rutgers time slot', `${data.best_time_slot?.hour_slot || 'n/a'} · ${pct(data.best_time_slot?.rate)} avg rate`],
     ['Strongest organization', `${data.strongest_organization?.organization_name || 'n/a'} · ${num(data.strongest_organization?.total_attendance)} attended`],
-    ['Most cost efficient', `${data.most_cost_efficient_category?.event_category || 'n/a'} · ${money(data.most_cost_efficient_category?.cost_per_attendee)}`]
+    ['Most cost efficient category', `${data.most_cost_efficient_category?.event_category || 'n/a'} · ${money(data.most_cost_efficient_category?.cost_per_attendee)}`]
   ];
   document.getElementById('insightsPanel').innerHTML = insights.map(([label, value]) => `
     <article class="insight-card"><p>${label}</p><strong>${value}</strong></article>
@@ -83,20 +83,22 @@ async function loadEvents() {
 function drawBarChart(canvasId, rows, labelKey, valueKey) {
   const canvas = document.getElementById(canvasId);
   const ctx = canvas.getContext('2d');
-  const width = canvas.clientWidth * window.devicePixelRatio;
-  const height = canvas.height * window.devicePixelRatio;
+  const dpr = window.devicePixelRatio || 1;
+  const width = canvas.clientWidth * dpr;
+  const height = canvas.height * dpr;
   canvas.width = width;
   canvas.height = height;
   ctx.clearRect(0, 0, width, height);
-  ctx.font = `${12 * window.devicePixelRatio}px system-ui`;
-  const padding = 38 * window.devicePixelRatio;
+  ctx.font = `${12 * dpr}px system-ui`;
+  const padding = 38 * dpr;
   const chartWidth = width - padding * 2;
   const chartHeight = height - padding * 1.6;
   const max = Math.max(...rows.map((row) => Number(row[valueKey] || 0)), 1);
-  const gap = 8 * window.devicePixelRatio;
+  const gap = 8 * dpr;
   const barWidth = chartWidth / rows.length - gap;
 
-  ctx.strokeStyle = '#d9e2ec';
+  ctx.strokeStyle = '#eadde0';
+  ctx.lineWidth = 1 * dpr;
   ctx.beginPath();
   ctx.moveTo(padding, padding / 2);
   ctx.lineTo(padding, chartHeight + padding / 2);
@@ -108,19 +110,24 @@ function drawBarChart(canvasId, rows, labelKey, valueKey) {
     const barHeight = chartHeight * (value / max);
     const x = padding + index * (barWidth + gap);
     const y = chartHeight + padding / 2 - barHeight;
-    ctx.fillStyle = '#155eef';
+
+    const gradient = ctx.createLinearGradient(0, y, 0, chartHeight + padding / 2);
+    gradient.addColorStop(0, '#cc0033');
+    gradient.addColorStop(1, '#8f001f');
+    ctx.fillStyle = gradient;
     ctx.fillRect(x, y, Math.max(barWidth, 1), barHeight);
-    ctx.fillStyle = '#64748b';
+
+    ctx.fillStyle = '#7a1026';
     const label = String(row[labelKey]).slice(-5);
-    ctx.fillText(label, x, height - 8 * window.devicePixelRatio);
+    ctx.fillText(label, x, height - 8 * dpr);
   });
 }
 
 async function loadCharts() {
   const trends = await api('/analytics/attendance-trends');
-  const categories = await api('/analytics/category-mix');
+  const categoryRows = await api('/analytics/category-mix');
   drawBarChart('trendChart', trends.slice(-12), 'period', 'attended');
-  drawBarChart('categoryChart', categories, 'event_category', 'attended');
+  drawBarChart('categoryChart', categoryRows, 'event_category', 'attended');
 }
 
 async function loadLists() {
