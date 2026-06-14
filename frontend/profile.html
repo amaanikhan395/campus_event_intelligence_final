@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Profile | Rutgers Events</title><link rel="stylesheet" href="styles.css" /></head>
+<body>
+<header class="page-header">
+  <nav class="nav">
+    <a class="brand" href="/"><div class="r-mark">R</div><div><strong>Rutgers Events</strong><span>Profile</span></div></a>
+    <div class="nav-actions"><a class="nav-link" href="/">Browse Events</a><a class="nav-link" href="/create-event.html">Post Event</a><button class="ghost-button" id="logoutButton">Logout</button></div>
+  </nav>
+</header>
+<main class="container">
+  <section class="profile-grid">
+    <aside class="panel profile-card">
+      <p class="eyebrow">My account</p>
+      <h1 id="profileName">Loading...</h1>
+      <p id="profileEmail" class="muted"></p>
+      <p class="verification-pill" id="verificationStatus"></p>
+      <button class="danger-button" id="deleteAccountButton">Delete Account</button>
+    </aside>
+    <section class="panel">
+      <div class="panel-header compact"><div><p class="eyebrow">My events</p><h2>Events I posted</h2><p class="muted">See RSVP counts and delete events you no longer want listed.</p></div></div>
+      <div class="message" id="messageBox"></div>
+      <div class="event-grid" id="myEventsGrid"></div>
+    </section>
+  </section>
+</main>
+<script src="auth-pages.js"></script>
+</body>
+</html>

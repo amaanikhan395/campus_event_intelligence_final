@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Post Event | Rutgers Events</title><link rel="stylesheet" href="styles.css" /></head>
+<body>
+<header class="page-header">
+  <nav class="nav">
+    <a class="brand" href="/"><div class="r-mark">R</div><div><strong>Rutgers Events</strong><span>Post Event</span></div></a>
+    <div class="nav-actions"><a class="nav-link" href="/">Browse Events</a><a class="nav-link" href="/profile.html">Profile</a><button class="ghost-button" id="logoutButton">Logout</button></div>
+  </nav>
+</header>
+<main class="container narrow">
+  <section class="panel">
+    <p class="eyebrow">Verified users only</p>
+    <h1>Post a Rutgers Event</h1>
+    <p class="muted">Submit campus events with an EST time slot. Your event will appear in the public event explorer.</p>
+    <div class="message" id="messageBox"></div>
+    <form id="eventForm" class="form-grid">
+      <label class="wide">Event title<input type="text" name="title" required placeholder="Rutgers Career Fair" /></label>
+      <label class="wide">Description<textarea name="description" rows="4" required placeholder="Describe the event clearly."></textarea></label>
+      <label>Category<select name="category" required><option value="">Select category</option><option>Academic</option><option>Campus Life</option><option>Careers & Entrepreneurship</option><option>Commencement</option><option>Community</option><option>Arts</option><option>Training/Workshop</option><option>Student Organization</option><option>Athletics</option><option>Other</option></select></label>
+      <label>Campus zone<select name="campus_zone" required><option value="">Select zone</option><option>College Ave</option><option>Livingston</option><option>Busch</option><option>Cook/Douglass</option><option>Online</option><option>New Brunswick</option><option>Piscataway</option><option>Multiple Campuses</option></select></label>
+      <label class="wide">Location<input type="text" name="location" required placeholder="College Avenue Student Center" /></label>
+      <label>Event date<input type="date" name="event_date" required /></label>
+      <label>Start time EST<input type="time" name="start_time_est" required /></label>
+      <label>End time EST<input type="time" name="end_time_est" required /></label>
+      <label class="wide">Source URL optional<input type="url" name="source_url" placeholder="https://..." /></label>
+      <button class="primary-button wide" type="submit">Post Event</button>
+    </form>
+  </section>
+</main>
+<script src="auth-pages.js"></script>
+</body>
+</html>

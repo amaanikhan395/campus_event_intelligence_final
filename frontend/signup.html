@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Create Account | Rutgers Events</title><link rel="stylesheet" href="styles.css" /></head>
+<body class="auth-page">
+  <main class="auth-shell">
+    <a class="brand auth-brand" href="/"><div class="r-mark">R</div><div><strong>Rutgers Events</strong><span>Campus Intelligence</span></div></a>
+    <section class="auth-card">
+      <p class="eyebrow">Create account</p>
+      <h1>Join Rutgers Events</h1>
+      <p class="muted">Create an account to post events and RSVP. Your account must be verified before posting or clicking Going.</p>
+      <form id="signupForm" class="form-stack">
+        <label>Full name<input type="text" name="full_name" required placeholder="Amaan Khan" /></label>
+        <label>Email<input type="email" name="email" required placeholder="you@example.com" /></label>
+        <label>Password<input type="password" name="password" required minlength="8" placeholder="Minimum 8 characters" /></label>
+        <button class="primary-button full-width" type="submit">Create Account</button>
+      </form>
+      <div class="message" id="messageBox"></div>
+      <p class="auth-footer">Already have an account? <a href="/login.html">Log in</a></p>
+    </section>
+  </main>
+  <script src="auth-pages.js"></script>
+</body>
+</html>

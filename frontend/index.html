@@ -9,111 +9,79 @@
 <body>
   <header class="hero">
     <nav class="nav">
-      <div class="brand">
+      <a class="brand" href="/">
         <div class="r-mark">R</div>
         <div><strong>Rutgers Events</strong><span>Campus Intelligence</span></div>
-      </div>
+      </a>
       <div class="nav-actions">
-        <button class="ghost-button" id="openAccountButton">Create Account</button>
-        <button class="primary-button" id="openPostButton">Post Event</button>
+        <a class="nav-link" href="/">Browse Events</a>
+        <a class="nav-link auth-only hidden" href="/create-event.html">Post Event</a>
+        <a class="nav-link auth-only hidden" href="/profile.html">Profile</a>
+        <a class="nav-link guest-only" href="/login.html">Login</a>
+        <a class="primary-button guest-only" href="/signup.html">Create Account</a>
+        <button class="ghost-button auth-only hidden" id="logoutButton">Logout</button>
       </div>
     </nav>
-
     <section class="hero-grid">
       <div class="hero-copy">
         <p class="eyebrow">Rutgers Campus Event Intelligence Platform</p>
-        <h1>Find, filter, and publish Rutgers events in one clean dashboard.</h1>
-        <p class="hero-subtitle">A full-stack event catalog using verified Rutgers public dates and user-submitted event listings. Built for students, organizations, and campus teams who want one place to discover what is happening across Rutgers.</p>
+        <h1>Find, filter, and post Rutgers events in one clean dashboard.</h1>
+        <p class="hero-subtitle">A full-stack event catalog for students and organizations to discover verified Rutgers academic dates, campus events, and user-submitted event listings.</p>
+        <div class="hero-actions">
+          <a class="primary-button" href="#eventsPanel">Browse Events</a>
+          <a class="ghost-button" href="/create-event.html">Post an Event</a>
+        </div>
       </div>
-
       <div class="dashboard-preview">
         <div class="window-dots"><span></span><span></span><span></span></div>
         <aside>
           <div class="mini-brand"><span>R</span> Rutgers</div>
-          <strong>Dashboard</strong><p>Events</p><p>Organizations</p><p>Submit</p>
+          <strong class="active">Dashboard</strong>
+          <p>Events</p><p>Organizations</p><p>Profile</p>
         </aside>
         <main>
-          <div class="mini-cards"><div></div><div></div><div></div></div>
-          <div class="mini-chart"><span></span><span></span><span></span><span></span><span></span></div>
-          <div class="mini-row">Verified Rutgers sources + student submissions</div>
+          <div class="preview-cards">
+            <article><span>Events</span><strong id="previewEventCount">0</strong></article>
+            <article><span>Categories</span><strong id="previewCategoryCount">0</strong></article>
+            <article><span>Zones</span><strong id="previewZoneCount">0</strong></article>
+          </div>
+          <div class="preview-chart" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="preview-strip">Real Rutgers records + user-submitted events</div>
         </main>
       </div>
     </section>
   </header>
-
   <main class="container">
-    <section class="cards" id="summaryCards"></section>
-    <section class="insights" id="insightsPanel"></section>
-
-    <section class="panel account-panel" id="accountPanel">
-      <div>
-        <p class="eyebrow dark">Student account</p>
-        <h2>Create an account to post events</h2>
-      </div>
-      <form class="account-form" id="accountForm">
-        <input id="fullName" placeholder="Full name" required />
-        <input id="email" type="email" placeholder="Rutgers email" required />
-        <select id="role"><option>Student</option><option>Organization Admin</option><option>Faculty/Staff</option></select>
-        <button type="submit">Create / Sign In</button>
-      </form>
-      <p class="signed-in" id="signedInState"></p>
+    <section class="stats-grid">
+      <article class="stat-card"><span>Total Events</span><strong id="totalEvents">0</strong></article>
+      <article class="stat-card"><span>Upcoming Events</span><strong id="upcomingEvents">0</strong></article>
+      <article class="stat-card"><span>Campus Zones</span><strong id="campusZones">0</strong></article>
+      <article class="stat-card"><span>Categories</span><strong id="categoriesCount">0</strong></article>
     </section>
-
-    <section class="panel submit-panel" id="postPanel">
+    <section class="panel" id="eventsPanel">
       <div class="panel-header">
-        <div><p class="eyebrow dark">Post to dashboard</p><h2>Submit a Rutgers event</h2><p>Submitted events appear in the Event Explorer and can be filtered by category, campus zone, status, and keyword.</p></div>
-      </div>
-      <form class="event-form" id="eventForm">
-        <input id="eventName" placeholder="Event name" required />
-        <input id="organizationName" placeholder="Organization name" required />
-        <select id="eventCategory" required></select>
-        <input id="eventDate" type="date" required />
-        <input id="startTime" type="time" required />
-        <input id="endTime" type="time" required />
-        <input id="buildingName" placeholder="Building or location" required />
-        <input id="roomName" placeholder="Room, hall, or area" />
-        <select id="campusZone" required></select>
-        <textarea id="eventDescription" placeholder="Short event description"></textarea>
-        <button type="submit">Submit Event</button>
-      </form>
-      <p class="form-message" id="formMessage"></p>
-    </section>
-
-    <section class="panel event-panel">
-      <div class="panel-header explorer-header">
         <div>
-          <p class="eyebrow dark">Verified Rutgers records + submitted events</p>
-          <h2>Event Explorer</h2>
-          <p>The seeded records use Rutgers public academic-calendar and public event pages for the September 2025-May 2026 academic window. </p>
+          <p class="eyebrow">Event Discovery</p>
+          <h2>Rutgers Event Explorer</h2>
+          <p class="muted">Filter by keyword, category, campus zone, or event status.</p>
         </div>
         <div class="filters">
-          <input id="searchInput" placeholder="Search event, organization, location" />
+          <input id="searchInput" type="search" placeholder="Search events, locations, categories..." />
           <select id="categoryFilter"><option value="">All categories</option></select>
           <select id="zoneFilter"><option value="">All zones</option></select>
-          <select id="statusFilter"><option value="">All statuses</option><option>Published</option><option>Submitted</option><option>Cancelled</option></select>
-          <button id="filterButton">Apply Filters</button>
+          <select id="statusFilter">
+            <option value="">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="ongoing">Ongoing</option>
+            <option value="ended">Ended</option>
+          </select>
+          <button class="primary-button" id="applyFilters">Apply Filters</button>
         </div>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Date</th><th>Event</th><th>Organization</th><th>Category</th><th>Location</th><th>Status</th><th>Source</th></tr></thead>
-          <tbody id="eventsTable"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="grid two">
-      <div class="panel chart-panel"><div class="panel-header compact"><h2>Events by Month</h2><span class="pill">Sep 2025-May 2026</span></div><canvas id="trendChart" height="180"></canvas></div>
-      <div class="panel chart-panel"><div class="panel-header compact"><h2>Category Mix</h2><span class="pill">Event count</span></div><canvas id="categoryChart" height="180"></canvas></div>
-    </section>
-
-    <section class="grid three">
-      <div class="panel"><h2>Upcoming Events</h2><div id="upcomingList" class="list"></div></div>
-      <div class="panel"><h2>Top Organizations</h2><div id="organizationList" class="list"></div></div>
-      <div class="panel"><h2>Source Breakdown</h2><div id="sourceList" class="list"></div></div>
+      <div class="message" id="messageBox"></div>
+      <div class="event-grid" id="eventsGrid"></div>
     </section>
   </main>
-
   <script src="app.js"></script>
 </body>
 </html>

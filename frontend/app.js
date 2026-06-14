@@ -1,23 +1,33 @@
 const API = '/api';
-const categories = ['Academic', 'Campus Life', 'Careers & Entrepreneurship', 'Commencement', 'Community', 'Arts', 'Training/Workshop', 'Student Organization', 'Athletics', 'Other'];
-const zones = ['College Ave', 'Livingston', 'Busch', 'Cook/Douglass', 'Online', 'New Brunswick', 'Piscataway', 'Multiple Campuses'];
-const integer = new Intl.NumberFormat('en-US');
 
-function num(value) { return value === null || value === undefined ? '0' : integer.format(value); }
-function monthLabel(value) {
-  const [year, month] = value.split('-');
-  return new Date(Number(year), Number(month) - 1).toLocaleString('en-US', { month: 'short' });
+const categories = ['Academic','Campus Life','Careers & Entrepreneurship','Commencement','Community','Arts','Training/Workshop','Student Organization','Athletics','Other'];
+const zones = ['College Ave','Livingston','Busch','Cook/Douglass','Online','New Brunswick','Piscataway','Multiple Campuses'];
+
+function token() { return localStorage.getItem('rutgers_events_token'); }
+
+function setMessage(text, type = 'info') {
+  const box = document.getElementById('messageBox');
+  if (!box) return;
+  box.textContent = text;
+  box.className = `message ${type}`;
+  box.style.display = text ? 'block' : 'none';
 }
-function currentUser() { return JSON.parse(localStorage.getItem('cei_user') || 'null'); }
-function saveUser(user) { localStorage.setItem('cei_user', JSON.stringify(user)); renderSignedInState(); }
-async function api(path, options = {}) {
-  const response = await fetch(`${API}${path}`, { headers: { 'Content-Type': 'application/json' }, ...options });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.error || `API request failed: ${path}`);
-  return payload;
+
+function updateNav() {
+  const loggedIn = Boolean(token());
+  document.querySelectorAll('.auth-only').forEach((el) => el.classList.toggle('hidden', !loggedIn));
+  document.querySelectorAll('.guest-only').forEach((el) => el.classList.toggle('hidden', loggedIn));
+  const logout = document.getElementById('logoutButton');
+  if (logout) logout.addEventListener('click', () => {
+    localStorage.removeItem('rutgers_events_token');
+    localStorage.removeItem('rutgers_events_user');
+    window.location.href = '/';
+  });
 }
+
 function populateSelect(id, values) {
   const select = document.getElementById(id);
+  if (!select) return;
   values.forEach((value) => {
     const option = document.createElement('option');
     option.value = value;
@@ -25,145 +35,97 @@ function populateSelect(id, values) {
     select.appendChild(option);
   });
 }
-function renderSignedInState() {
-  const user = currentUser();
-  document.getElementById('signedInState').textContent = user ? `Signed in as ${user.full_name} (${user.email})` : '';
+
+function formatDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 }
-function renderCards(summary) {
-  const cards = [
-    ['Verified Rutgers records', num(summary.verified_source_events)],
-    ['Submitted events', num(summary.submitted_events)],
-    ['Organizations indexed', num(summary.total_organizations)],
-    ['Campus zones', num(summary.campus_zones)]
-  ];
-  document.getElementById('summaryCards').innerHTML = cards.map(([label, value]) => `
-    <article class="card"><p>${label}</p><strong>${value}</strong></article>
-  `).join('');
+
+function time(value) { return value ? value.slice(0, 5) : ''; }
+function statusClass(status) { return `status ${status || 'pending'}`; }
+
+function eventCard(event) {
+  const source = event.source_url ? `<a href="${event.source_url}" target="_blank" rel="noreferrer">Source</a>` : '';
+  return `
+    <article class="event-card">
+      <div class="event-card-top">
+        <span class="${statusClass(event.status)}">${event.status || 'pending'}</span>
+        <span class="going-count">${event.going_count || 0} going</span>
+      </div>
+      <h3>${event.title}</h3>
+      <p>${event.description || ''}</p>
+      <dl>
+        <div><dt>Date</dt><dd>${formatDate(event.event_date)}</dd></div>
+        <div><dt>Time</dt><dd>${time(event.start_time_est)}-${time(event.end_time_est)} EST</dd></div>
+        <div><dt>Category</dt><dd>${event.category}</dd></div>
+        <div><dt>Campus</dt><dd>${event.campus_zone}</dd></div>
+        <div><dt>Location</dt><dd>${event.location}</dd></div>
+        <div><dt>Posted by</dt><dd>${event.posted_by || 'Rutgers source'}</dd></div>
+      </dl>
+      <div class="event-actions">
+        <button class="primary-button going-button" data-event-id="${event.id}">Going</button>
+        ${source}
+      </div>
+    </article>
+  `;
 }
-function renderInsights(data) {
-  const insights = [
-    ['Top category', `${data.top_category?.event_category || 'n/a'} · ${num(data.top_category?.event_count)} records`],
-    ['Most common zone', `${data.top_zone?.campus_zone || 'n/a'} · ${num(data.top_zone?.event_count)} records`],
-    ['Most active organization', `${data.top_organization?.organization_name || 'n/a'} · ${num(data.top_organization?.event_count)} records`],
-    ['User-submitted listings', `${num(data.submitted_events)} events available in filters`]
-  ];
-  document.getElementById('insightsPanel').innerHTML = insights.map(([label, value]) => `
-    <article class="insight-card"><p>${label}</p><strong>${value}</strong></article>
-  `).join('');
-}
-function queryString() {
-  const params = new URLSearchParams({ limit: '80', sort: 'date' });
-  const search = document.getElementById('searchInput').value.trim();
-  const category = document.getElementById('categoryFilter').value;
-  const zone = document.getElementById('zoneFilter').value;
-  const status = document.getElementById('statusFilter').value;
+
+async function loadEvents() {
+  const params = new URLSearchParams();
+  const search = document.getElementById('searchInput')?.value.trim();
+  const category = document.getElementById('categoryFilter')?.value;
+  const campusZone = document.getElementById('zoneFilter')?.value;
+  const status = document.getElementById('statusFilter')?.value;
   if (search) params.set('search', search);
   if (category) params.set('category', category);
-  if (zone) params.set('zone', zone);
+  if (campusZone) params.set('campus_zone', campusZone);
   if (status) params.set('status', status);
-  return params.toString();
+
+  const response = await fetch(`${API}/events?${params.toString()}`);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Could not load events.');
+
+  const events = data.events || [];
+  const grid = document.getElementById('eventsGrid');
+  grid.innerHTML = events.length ? events.map(eventCard).join('') : `<div class="empty-state">No events found. Try changing your filters.</div>`;
+  updateSummary(events);
+  attachGoingButtons();
 }
-async function loadEvents() {
-  const data = await api(`/events?${queryString()}`);
-  document.getElementById('eventsTable').innerHTML = data.results.map((event) => `
-    <tr>
-      <td>${event.event_date}<small>${event.start_time} to ${event.end_time}</small></td>
-      <td><strong>${event.event_name}</strong><small>${event.description || ''}</small></td>
-      <td>${event.organization_name}<small>${event.organization_type}</small></td>
-      <td><span class="pill">${event.event_category}</span></td>
-      <td>${event.building_name}<small>${event.room_name} · ${event.campus_zone}</small></td>
-      <td><span class="status ${event.status}">${event.status}</span><small>${event.source_system.replaceAll('_', ' ')}</small></td>
-      <td>${event.source_url ? `<a class="source-link" href="${event.source_url}" target="_blank" rel="noreferrer">View source</a>` : '<span class="pill">Submitted</span>'}</td>
-    </tr>
-  `).join('');
+
+function updateSummary(events) {
+  const total = events.length;
+  const upcoming = events.filter((e) => e.status === 'pending' || e.status === 'ongoing').length;
+  const zoneCount = new Set(events.map((e) => e.campus_zone).filter(Boolean)).size;
+  const categoryCount = new Set(events.map((e) => e.category).filter(Boolean)).size;
+  const values = { totalEvents: total, upcomingEvents: upcoming, campusZones: zoneCount, categoriesCount: categoryCount, previewEventCount: total, previewCategoryCount: categoryCount, previewZoneCount: zoneCount };
+  Object.entries(values).forEach(([id, value]) => { const el = document.getElementById(id); if (el) el.textContent = value; });
 }
-function drawBarChart(canvasId, rows, labelKey, valueKey) {
-  const canvas = document.getElementById(canvasId);
-  const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const width = canvas.clientWidth * dpr;
-  const height = canvas.height * dpr;
-  canvas.width = width;
-  canvas.height = height;
-  ctx.clearRect(0, 0, width, height);
-  ctx.font = `${12 * dpr}px system-ui`;
-  const padding = 42 * dpr;
-  const chartWidth = width - padding * 2;
-  const chartHeight = height - padding * 1.7;
-  const max = Math.max(...rows.map((row) => Number(row[valueKey] || 0)), 1);
-  const gap = 10 * dpr;
-  const barWidth = chartWidth / rows.length - gap;
-  ctx.strokeStyle = '#eadde0'; ctx.lineWidth = 1 * dpr;
-  ctx.beginPath(); ctx.moveTo(padding, padding / 2); ctx.lineTo(padding, chartHeight + padding / 2); ctx.lineTo(width - padding / 2, chartHeight + padding / 2); ctx.stroke();
-  rows.forEach((row, index) => {
-    const value = Number(row[valueKey] || 0);
-    const barHeight = Math.max(4 * dpr, chartHeight * (value / max));
-    const x = padding + index * (barWidth + gap);
-    const y = chartHeight + padding / 2 - barHeight;
-    const gradient = ctx.createLinearGradient(0, y, 0, chartHeight + padding / 2);
-    gradient.addColorStop(0, '#cc0033'); gradient.addColorStop(1, '#8f001f');
-    ctx.fillStyle = gradient; ctx.fillRect(x, y, Math.max(barWidth, 1), barHeight);
-    ctx.fillStyle = '#7a1026';
-    const label = labelKey === 'period' ? monthLabel(row[labelKey]) : String(row[labelKey]).slice(0, 10);
-    ctx.fillText(label, x, height - 10 * dpr);
+
+function attachGoingButtons() {
+  document.querySelectorAll('.going-button').forEach((button) => {
+    button.addEventListener('click', async () => {
+      if (!token()) {
+        window.location.href = '/login.html';
+        return;
+      }
+      try {
+        const response = await fetch(`${API}/events/${button.dataset.eventId}/going`, { method: 'POST', headers: { Authorization: `Bearer ${token()}` } });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Could not RSVP.');
+        setMessage(data.message || 'You are marked as going.', 'success');
+        await loadEvents();
+      } catch (error) {
+        setMessage(error.message, 'error');
+      }
+    });
   });
 }
-async function loadCharts() {
-  const trends = await api('/analytics/event-trends');
-  const categoryRows = await api('/analytics/category-mix');
-  drawBarChart('trendChart', trends, 'period', 'event_count');
-  drawBarChart('categoryChart', categoryRows, 'event_category', 'event_count');
-}
-async function loadLists() {
-  const [upcoming, organizations, sources] = await Promise.all([
-    api('/analytics/upcoming'),
-    api('/organizations/leaderboard'),
-    api('/analytics/source-mix')
-  ]);
-  document.getElementById('upcomingList').innerHTML = (upcoming.length ? upcoming : []).slice(0, 8).map((event) => `
-    <div class="item"><strong>${event.event_name}</strong><span>${event.event_date} · ${event.building_name} · ${event.event_category}</span></div>
-  `).join('') || '<div class="item"><strong>No future seeded events</strong><span>Add one through the submission form.</span></div>';
-  document.getElementById('organizationList').innerHTML = organizations.slice(0, 8).map((org) => `
-    <div class="item"><strong>${org.organization_name}</strong><span>${num(org.event_count)} records · ${org.organization_type}</span></div>
-  `).join('');
-  document.getElementById('sourceList').innerHTML = sources.map((row) => `
-    <div class="item"><strong>${row.source_system.replaceAll('_', ' ')}</strong><span>${num(row.event_count)} records</span></div>
-  `).join('');
-}
-async function refreshDashboard() {
-  const [summary, insights] = await Promise.all([api('/analytics/summary'), api('/analytics/insights')]);
-  renderCards(summary); renderInsights(insights);
-  await Promise.all([loadEvents(), loadCharts(), loadLists()]);
-}
-document.getElementById('accountForm').addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const user = await api('/auth/signup', { method: 'POST', body: JSON.stringify({ full_name: fullName.value, email: email.value, role: role.value }) });
-  saveUser(user);
-});
-document.getElementById('eventForm').addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const user = currentUser();
-  if (!user) { formMessage.textContent = 'Create or sign in to an account before posting an event.'; return; }
-  const payload = {
-    user_id: user.user_id, email: user.email,
-    event_name: eventName.value, organization_name: organizationName.value, event_category: eventCategory.value,
-    event_date: eventDate.value, start_time: startTime.value, end_time: endTime.value,
-    building_name: buildingName.value, room_name: roomName.value || 'TBD', campus_zone: campusZone.value,
-    description: eventDescription.value, status: 'Submitted'
-  };
-  const created = await api('/events', { method: 'POST', body: JSON.stringify(payload) });
-  formMessage.textContent = `Submitted: ${created.event_name}. It is now visible in the Event Explorer.`;
-  event.target.reset();
-  await refreshDashboard();
-});
-document.getElementById('openAccountButton').addEventListener('click', () => document.getElementById('accountPanel').scrollIntoView({ behavior: 'smooth' }));
-document.getElementById('openPostButton').addEventListener('click', () => document.getElementById('postPanel').scrollIntoView({ behavior: 'smooth' }));
-document.getElementById('filterButton').addEventListener('click', loadEvents);
-document.getElementById('searchInput').addEventListener('keydown', (event) => { if (event.key === 'Enter') loadEvents(); });
-window.addEventListener('resize', () => loadCharts().catch(console.error));
 
-populateSelect('categoryFilter', categories); populateSelect('eventCategory', categories); populateSelect('zoneFilter', zones); populateSelect('campusZone', zones); renderSignedInState();
-refreshDashboard().catch((error) => {
-  console.error(error);
-  document.body.insertAdjacentHTML('afterbegin', `<div style="padding:16px;background:#fee4e2;color:#b42318">${error.message}. Run <code>npm run reset</code> and <code>npm start</code> from the backend folder.</div>`);
+document.addEventListener('DOMContentLoaded', async () => {
+  updateNav();
+  populateSelect('categoryFilter', categories);
+  populateSelect('zoneFilter', zones);
+  document.getElementById('applyFilters')?.addEventListener('click', loadEvents);
+  try { await loadEvents(); } catch (error) { setMessage(error.message, 'error'); }
 });
