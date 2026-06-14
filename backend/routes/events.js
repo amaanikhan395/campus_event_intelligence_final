@@ -1,110 +1,304 @@
 const express = require('express');
-const { all, get, run } = require('../db/database');
-const { buildEventFilters, toPositiveInt } = require('../utils/queryBuilder');
-const { badRequest } = require('../middleware/errors');
+const db = require('../db/database');
+const { requireAuth, requireVerified } = require('../middleware/auth');
 
 const router = express.Router();
-const allowedCategories = new Set(['Academic', 'Campus Life', 'Careers & Entrepreneurship', 'Commencement', 'Community', 'Arts', 'Training/Workshop', 'Student Organization', 'Athletics', 'Other']);
-const allowedStatuses = new Set(['Published', 'Submitted', 'Cancelled']);
 
-router.get('/', async (req, res, next) => {
+function getComputedStatus(eventDate, startTime, endTime) {
+  const now = new Date();
+
+  const start = new Date(`${eventDate}T${startTime}`);
+  const end = new Date(`${eventDate}T${endTime}`);
+
+  if (now < start) return 'pending';
+  if (now >= start && now <= end) return 'ongoing';
+  return 'ended';
+}
+
+router.get('/', async (req, res) => {
   try {
-    const limit = toPositiveInt(req.query.limit, 50, 200);
-    const page = toPositiveInt(req.query.page, 1, 10000);
-    const offset = (page - 1) * limit;
-    const sortMap = {
-      date: 'event_date ASC, start_time ASC',
-      newest: 'created_at DESC',
-      category: 'event_category ASC, event_date ASC',
-      organization: 'organization_name ASC, event_date ASC'
-    };
-    const orderBy = sortMap[req.query.sort] || sortMap.date;
-    const { whereSql, params } = buildEventFilters(req.query);
+    const {
+      search = '',
+      category = '',
+      campus_zone = '',
+      status = ''
+    } = req.query;
 
-    const rows = await all(
-      `SELECT * FROM v_event_catalog ${whereSql} ORDER BY ${orderBy} LIMIT ? OFFSET ?`,
-      [...params, limit, offset]
+    const params = [];
+    const filters = ['e.deleted_at IS NULL'];
+
+    if (search) {
+      params.push(`%${search.toLowerCase()}%`);
+      filters.push(
+        `(LOWER(e.title) LIKE $${params.length}
+          OR LOWER(e.description) LIKE $${params.length}
+          OR LOWER(e.location) LIKE $${params.length}
+          OR LOWER(e.category) LIKE $${params.length}
+          OR LOWER(e.campus_zone) LIKE $${params.length})`
+      );
+    }
+
+    if (category) {
+      params.push(category);
+      filters.push(`e.category = $${params.length}`);
+    }
+
+    if (campus_zone) {
+      params.push(campus_zone);
+      filters.push(`e.campus_zone = $${params.length}`);
+    }
+
+    const result = await db.query(
+      `
+      SELECT
+        e.id,
+        e.title,
+        e.description,
+        e.category,
+        e.campus_zone,
+        e.location,
+        e.event_date,
+        e.start_time_est,
+        e.end_time_est,
+        e.status,
+        e.source_url,
+        e.created_at,
+        u.full_name AS posted_by,
+        COUNT(r.id)::int AS going_count
+      FROM events e
+      LEFT JOIN users u ON u.id = e.creator_user_id
+      LEFT JOIN event_rsvps r ON r.event_id = e.id
+      WHERE ${filters.join(' AND ')}
+      GROUP BY e.id, u.full_name
+      ORDER BY e.event_date ASC, e.start_time_est ASC
+      `,
+      params
     );
-    const count = await get(`SELECT COUNT(*) AS total FROM v_event_catalog ${whereSql}`, params);
-    res.json({ page, limit, total: count.total, results: rows });
+
+    let events = result.rows.map((event) => {
+      const computedStatus = getComputedStatus(
+        event.event_date.toISOString().slice(0, 10),
+        event.start_time_est,
+        event.end_time_est
+      );
+
+      return {
+        ...event,
+        status: computedStatus
+      };
+    });
+
+    if (status) {
+      events = events.filter((event) => event.status === status);
+    }
+
+    res.json({ events });
   } catch (error) {
-    next(error);
+    console.error('Get events error:', error);
+    res.status(500).json({ error: 'Could not load events.' });
   }
 });
 
-router.get('/:id', async (req, res, next) => {
+router.post('/', requireAuth, requireVerified, async (req, res) => {
   try {
-    const event = await get('SELECT * FROM v_event_catalog WHERE event_id = ?', [req.params.id]);
-    if (!event) return res.status(404).json({ error: 'Event not found' });
-    const audit = await all('SELECT action, old_status, new_status, changed_at FROM event_audit_log WHERE event_id = ? ORDER BY changed_at DESC', [req.params.id]);
-    res.json({ ...event, audit });
-  } catch (error) {
-    next(error);
-  }
-});
+    const {
+      title,
+      description,
+      category,
+      campus_zone,
+      location,
+      event_date,
+      start_time_est,
+      end_time_est,
+      source_url
+    } = req.body;
 
-router.post('/', async (req, res, next) => {
-  try {
-    const body = req.body;
-    const required = ['event_name', 'organization_name', 'event_category', 'event_date', 'start_time', 'end_time', 'building_name', 'campus_zone'];
-    const missing = required.filter((field) => body[field] === undefined || body[field] === '');
-    if (missing.length) throw badRequest(`Missing required fields: ${missing.join(', ')}`);
-    if (!allowedCategories.has(body.event_category)) throw badRequest('Invalid event_category');
-    if (body.status && !allowedStatuses.has(body.status)) throw badRequest('Invalid status');
-
-    let userId = body.user_id ? Number(body.user_id) : null;
-    if (!userId && body.email) {
-      const existingUser = await get('SELECT user_id FROM users WHERE email = ?', [body.email.trim().toLowerCase()]);
-      if (existingUser) userId = existingUser.user_id;
+    if (
+      !title ||
+      !description ||
+      !category ||
+      !campus_zone ||
+      !location ||
+      !event_date ||
+      !start_time_est ||
+      !end_time_est
+    ) {
+      return res.status(400).json({
+        error: 'Title, description, category, campus zone, location, date, start time, and end time are required.'
+      });
     }
 
-    let org = await get('SELECT organization_id FROM organizations WHERE organization_name = ?', [body.organization_name.trim()]);
-    if (!org) {
-      const orgResult = await run(
-        'INSERT INTO organizations (organization_name, organization_type, contact_email) VALUES (?, ?, ?)',
-        [body.organization_name.trim(), body.organization_type || 'Student Organization', body.email || null]
-      );
-      org = { organization_id: orgResult.id };
-    }
-
-    let location = await get('SELECT location_id FROM locations WHERE building_name = ? AND room_name = ?', [body.building_name.trim(), (body.room_name || 'TBD').trim()]);
-    if (!location) {
-      const locResult = await run(
-        'INSERT INTO locations (building_name, room_name, campus_zone, capacity, has_av) VALUES (?, ?, ?, ?, ?)',
-        [body.building_name.trim(), (body.room_name || 'TBD').trim(), body.campus_zone, Number(body.capacity || 0), 1]
-      );
-      location = { location_id: locResult.id };
-    }
-
-    const result = await run(
-      `INSERT INTO events
-        (event_name, description, organization_id, location_id, event_category, event_date, start_time, end_time, status, source_system, source_url, submitted_by_user_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    const result = await db.query(
+      `
+      INSERT INTO events (
+        creator_user_id,
+        title,
+        description,
+        category,
+        campus_zone,
+        location,
+        event_date,
+        start_time_est,
+        end_time_est,
+        source_url
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING *
+      `,
       [
-        body.event_name.trim(), body.description || '', org.organization_id, location.location_id, body.event_category,
-        body.event_date, body.start_time, body.end_time, body.status || 'Submitted', 'user_submitted', body.source_url || null, userId
+        req.user.id,
+        title,
+        description,
+        category,
+        campus_zone,
+        location,
+        event_date,
+        start_time_est,
+        end_time_est,
+        source_url || null
       ]
     );
 
-    await run('INSERT INTO attendance (event_id, registered_count, attended_count, waitlist_count) VALUES (?, 0, 0, 0)', [result.id]);
-    await run('INSERT INTO budgets (event_id, planned_budget, actual_spend) VALUES (?, 0, 0)', [result.id]);
-    const created = await get('SELECT * FROM v_event_catalog WHERE event_id = ?', [result.id]);
-    res.status(201).json(created);
+    res.status(201).json({
+      message: 'Event posted successfully.',
+      event: result.rows[0]
+    });
   } catch (error) {
-    if (String(error.message).includes('UNIQUE')) error.status = 409;
-    next(error);
+    console.error('Create event error:', error);
+    res.status(500).json({ error: 'Could not create event.' });
   }
 });
 
-router.patch('/:id/status', async (req, res, next) => {
+router.post('/:id/going', requireAuth, requireVerified, async (req, res) => {
   try {
-    if (!allowedStatuses.has(req.body.status)) throw badRequest('Invalid status');
-    const result = await run('UPDATE events SET status = ? WHERE event_id = ?', [req.body.status, req.params.id]);
-    if (!result.changes) return res.status(404).json({ error: 'Event not found' });
-    const updated = await get('SELECT * FROM v_event_catalog WHERE event_id = ?', [req.params.id]);
-    res.json(updated);
+    const eventId = req.params.id;
+
+    const eventCheck = await db.query(
+      'SELECT id FROM events WHERE id = $1 AND deleted_at IS NULL',
+      [eventId]
+    );
+
+    if (eventCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Event not found.' });
+    }
+
+    await db.query(
+      `
+      INSERT INTO event_rsvps (event_id, user_id)
+      VALUES ($1, $2)
+      ON CONFLICT (event_id, user_id) DO NOTHING
+      `,
+      [eventId, req.user.id]
+    );
+
+    const countResult = await db.query(
+      'SELECT COUNT(*)::int AS going_count FROM event_rsvps WHERE event_id = $1',
+      [eventId]
+    );
+
+    res.json({
+      message: 'You are marked as going.',
+      going_count: countResult.rows[0].going_count
+    });
   } catch (error) {
-    next(error);
+    console.error('Going error:', error);
+    res.status(500).json({ error: 'Could not RSVP to event.' });
+  }
+});
+
+router.delete('/:id/going', requireAuth, async (req, res) => {
+  try {
+    const eventId = req.params.id;
+
+    await db.query(
+      'DELETE FROM event_rsvps WHERE event_id = $1 AND user_id = $2',
+      [eventId, req.user.id]
+    );
+
+    const countResult = await db.query(
+      'SELECT COUNT(*)::int AS going_count FROM event_rsvps WHERE event_id = $1',
+      [eventId]
+    );
+
+    res.json({
+      message: 'You are no longer marked as going.',
+      going_count: countResult.rows[0].going_count
+    });
+  } catch (error) {
+    console.error('Remove going error:', error);
+    res.status(500).json({ error: 'Could not remove RSVP.' });
+  }
+});
+
+router.get('/profile/mine', requireAuth, async (req, res) => {
+  try {
+    const result = await db.query(
+      `
+      SELECT
+        e.id,
+        e.title,
+        e.description,
+        e.category,
+        e.campus_zone,
+        e.location,
+        e.event_date,
+        e.start_time_est,
+        e.end_time_est,
+        e.status,
+        e.created_at,
+        COUNT(r.id)::int AS going_count
+      FROM events e
+      LEFT JOIN event_rsvps r ON r.event_id = e.id
+      WHERE e.creator_user_id = $1
+        AND e.deleted_at IS NULL
+      GROUP BY e.id
+      ORDER BY e.event_date ASC, e.start_time_est ASC
+      `,
+      [req.user.id]
+    );
+
+    const events = result.rows.map((event) => ({
+      ...event,
+      status: getComputedStatus(
+        event.event_date.toISOString().slice(0, 10),
+        event.start_time_est,
+        event.end_time_est
+      )
+    }));
+
+    res.json({ events });
+  } catch (error) {
+    console.error('Profile events error:', error);
+    res.status(500).json({ error: 'Could not load your events.' });
+  }
+});
+
+router.delete('/:id', requireAuth, async (req, res) => {
+  try {
+    const eventId = req.params.id;
+
+    const eventCheck = await db.query(
+      'SELECT creator_user_id FROM events WHERE id = $1 AND deleted_at IS NULL',
+      [eventId]
+    );
+
+    if (eventCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Event not found.' });
+    }
+
+    if (eventCheck.rows[0].creator_user_id !== req.user.id) {
+      return res.status(403).json({ error: 'You can only delete your own events.' });
+    }
+
+    await db.query(
+      'UPDATE events SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1',
+      [eventId]
+    );
+
+    res.json({ message: 'Event deleted successfully.' });
+  } catch (error) {
+    console.error('Delete event error:', error);
+    res.status(500).json({ error: 'Could not delete event.' });
   }
 });
 
