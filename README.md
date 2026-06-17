@@ -1,68 +1,140 @@
-# Campus Event Intelligence Platform
+# Rutgers Campus Event Intelligence Platform
 
-A recruiter-ready full-stack analytics platform for campus event operations. The project organizes **720 seeded event records** across student organizations, academic programs, career services, and departments, then turns the data into attendance trends, scheduling recommendations, budget efficiency metrics, and Excel-ready exports.
+A personal full-stack project built to help Rutgers students and campus organizations discover, submit, and manage campus events through one centralized dashboard. The platform started as an event analytics tool, but evolved into a more realistic campus event system with user accounts, event posting, RSVP tracking, and a PostgreSQL database.
 
-This version is intentionally built to look like a real internal operations tool, not a quick demo. It includes a normalized SQL model, generated views, audit triggers, data-quality checks, Python ETL, REST APIs, and a polished dashboard.
+The project is designed around a Rutgers-themed event discovery experience. Students can browse events, filter by category and campus zone, create an account, verify their email, post events, and mark themselves as going. Event creators can view their posted events, see how many users RSVP’d, and delete events they no longer want listed.
 
 ## What it does
 
-- Tracks campus events, organizations, locations, attendance, feedback, and budgets in a relational SQL database.
-- Uses SQL constraints, generated columns, indexes, views, and triggers to keep reporting data consistent.
-- Seeds 720 realistic demo records using deterministic sample data.
-- Provides REST APIs for event search, event creation, attendance updates, feedback, organization reports, CSV exports, and analytics.
-- Includes a Python cleaning pipeline that standardizes messy exports, removes duplicates, creates derived metrics, and writes a JSON quality report.
-- Presents the data in a browser dashboard with KPIs, charts, event filters, scheduling recommendations, top events, budget efficiency, and data-quality monitoring.
+* Lets users create an account, log in, and verify their email before posting or RSVPing to events.
+* Stores user accounts, verification tokens, posted events, and RSVP records in a PostgreSQL database.
+* Allows verified users to post Rutgers-related events with a date, location, category, campus zone, and EST time slot.
+* Allows logged-in verified users to click “Going” on events they plan to attend.
+* Tracks how many users signed up for each event.
+* Includes a profile page where users can view their account details, posted events, RSVP counts, and delete their own events.
+* Supports event filtering by keyword, category, campus zone, and status.
+* Uses soft deletion for accounts and events so records can be removed without immediately breaking database relationships.
+* Uses JWT authentication to protect account, event creation, RSVP, and profile routes.
+* Uses email verification tokens so accounts can only be verified once.
 
 ## Tech stack
 
-| Layer | Tools |
-|---|---|
-| Backend | Node.js, Express.js |
-| Database | SQLite, SQL views, indexes, constraints, triggers |
-| Data cleaning | Python, Pandas |
-| Frontend | HTML, CSS, vanilla JavaScript, Canvas charts |
-| Reporting | CSV exports for Excel |
-| Testing | Node test runner, Supertest |
+| Layer              | Tools                                 |
+| ------------------ | ------------------------------------- |
+| Backend            | Node.js, Express.js                   |
+| Database           | PostgreSQL                            |
+| Authentication     | JWT, bcrypt                           |
+| Email verification | Nodemailer, verification tokens       |
+| Frontend           | HTML, CSS, vanilla JavaScript         |
+| Deployment         | Render Web Service, Render PostgreSQL |
+| Version control    | Git, GitHub                           |
 
 ## Project structure
 
 ```text
-campus_event_intelligence/
+campus_event_intelligence_platform_v2/
   backend/
     db/
-      schema.sql
       database.js
       initDb.js
-      seed.js
+      schema_postgres.sql
     middleware/
+      auth.js
       errors.js
     routes/
-      analytics.js
+      auth.js
       events.js
-      exports.js
+      analytics.js
       organizations.js
-    utils/
-      queryBuilder.js
+      exports.js
     config.js
     package.json
     server.js
-  data/
-    raw_events_sample.csv
-  docs/
-    api_examples.md
-    architecture.md
-    data_dictionary.md
-    recruiter_demo_script.md
   frontend/
     index.html
-    styles.css
+    signup.html
+    login.html
+    create-event.html
+    profile.html
     app.js
-  scripts/
-    clean_event_data.py
-  tests/
-    api.test.js
+    auth-pages.js
+    styles.css
   README.md
 ```
+
+## Main features
+
+### Account creation and login
+
+Users can create an account with their name, email, and password. Passwords are hashed with bcrypt before being stored in PostgreSQL. After signup, the backend creates a one-time verification token for that user.
+
+### Email verification
+
+New users start as unverified. The backend generates a verification link using a secure token. Once the user opens the verification link, their account is marked as verified and the token is marked as used. The same verification link cannot be used again.
+
+During development, if email credentials are not configured, the verification link is printed in the server logs. In production, the app can send verification emails using Nodemailer with email credentials stored as environment variables.
+
+### Event posting
+
+Only logged-in and verified users can post events. Each event includes:
+
+* Title
+* Description
+* Category
+* Campus zone
+* Location
+* Event date
+* Start time EST
+* End time EST
+* Optional source URL
+
+### Event discovery
+
+Anyone can browse events. Users can filter events by keyword, category, campus zone, and status. The dashboard is styled with Rutgers-inspired branding and is focused on event discovery instead of fake attendance or cost metrics.
+
+### RSVP / Going feature
+
+Verified users can click “Going” on an event. The RSVP is stored in the database, and each user can only RSVP to the same event once. The dashboard displays the number of users going to each event.
+
+### User profile
+
+Logged-in users have a profile page where they can:
+
+* View their name, email, and verification status
+* See all events they posted
+* See how many users RSVP’d to each event
+* Delete their own events
+* Delete their own account
+
+## Database design
+
+The PostgreSQL database includes tables for:
+
+```text
+users
+email_verification_tokens
+events
+event_rsvps
+event_status_history
+```
+
+The schema supports account verification, event ownership, RSVP tracking, soft deletion, and event status tracking.
+
+## Main API endpoints
+
+| Method | Endpoint                   | Purpose                                     |
+| ------ | -------------------------- | ------------------------------------------- |
+| POST   | `/api/auth/signup`         | Create a new user account                   |
+| POST   | `/api/auth/login`          | Log in and receive a JWT token              |
+| GET    | `/api/auth/verify-email`   | Verify a user account with a one-time token |
+| GET    | `/api/auth/me`             | Get the logged-in user’s profile            |
+| DELETE | `/api/auth/account`        | Soft-delete the logged-in user’s account    |
+| GET    | `/api/events`              | Browse and filter events                    |
+| POST   | `/api/events`              | Create an event as a verified user          |
+| POST   | `/api/events/:id/going`    | RSVP to an event                            |
+| DELETE | `/api/events/:id/going`    | Remove RSVP from an event                   |
+| GET    | `/api/events/profile/mine` | View events posted by the logged-in user    |
+| DELETE | `/api/events/:id`          | Delete an event owned by the logged-in user |
 
 ## Quick start
 
@@ -81,68 +153,34 @@ Open the dashboard:
 http://localhost:4000
 ```
 
-Health check:
+## Required environment variables
 
-```text
-http://localhost:4000/api/health
+Create a `backend/.env` file for local development:
+
+```env
+DATABASE_URL=your_postgres_database_url
+JWT_SECRET=your_jwt_secret
+APP_URL=http://localhost:4000
+NODE_ENV=development
 ```
 
-## Run the Python ETL pipeline
+Optional email variables for real email verification:
 
-From the project root:
-
-```bash
-python scripts/clean_event_data.py \
-  --input data/raw_events_sample.csv \
-  --output data/clean_events.csv \
-  --report data/quality_report.json
+```env
+EMAIL_USER=your_email_address
+EMAIL_PASS=your_email_app_password
 ```
 
-The cleaned CSV can be opened in Excel for pivot tables, charts, and manual review.
+For Render deployment, these same values should be added under the web service’s environment variables. The local environment should use the external PostgreSQL URL, while the deployed Render service should use the internal PostgreSQL URL.
 
-## Test the API
+## Deployment
 
-```bash
-cd backend
-npm test
-```
+The app is deployed using:
 
-## Main API endpoints
+* Render Web Service for the Node.js/Express backend and frontend
+* Render PostgreSQL for the database
+* GitHub for source control and automatic deploys
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| GET | `/api/health` | Backend health check |
-| GET | `/api/events` | Search, filter, sort, and paginate events |
-| GET | `/api/events/:id` | Event detail with feedback and audit history |
-| POST | `/api/events` | Create a new event |
-| PUT | `/api/events/:id/attendance` | Update registered, attended, and waitlist counts |
-| PATCH | `/api/events/:id/status` | Update event status and trigger audit log |
-| POST | `/api/events/:id/feedback` | Add event feedback |
-| GET | `/api/organizations` | List organizations |
-| GET | `/api/organizations/leaderboard` | Organization performance leaderboard |
-| GET | `/api/organizations/:id/report` | Organization-level performance report |
-| GET | `/api/analytics/summary` | Dashboard KPIs |
-| GET | `/api/analytics/attendance-trends` | Attendance by month or day |
-| GET | `/api/analytics/category-mix` | Category-level attendance and ratings |
-| GET | `/api/analytics/scheduling-gaps` | Congested, weak, and growth-opportunity time slots |
-| GET | `/api/analytics/top-events` | Highest-attendance completed events |
-| GET | `/api/analytics/budget-efficiency` | Cost per attendee by category |
-| GET | `/api/analytics/data-quality` | Duplicate, feedback, capacity, and budget checks |
-| GET | `/api/exports/events.csv` | Excel-ready event export |
+## Project purpose
 
-## Resume alignment
-
-This project supports the resume bullet points more credibly because it now includes concrete engineering depth:
-
-- **Full-stack platform:** Express API, SQL database, and browser dashboard.
-- **500+ records:** deterministic seed inserts 720 event records.
-- **Relational SQL design:** normalized tables for organizations, locations, events, attendance, feedback, budgets, and audit history.
-- **Duplicate reduction:** SQL uniqueness plus Python deduplication and quality reporting.
-- **Python automation:** ETL script standardizes dates, times, categories, locations, numeric fields, and derived metrics.
-- **REST APIs:** more than 10 endpoints for event creation, attendance tracking, filtering, analytics, reporting, exports, and feedback.
-
-## Suggested GitHub description
-
-```text
-Full-stack campus event analytics platform using Node.js, Express, SQLite, SQL views, Python ETL, and a JavaScript dashboard to analyze attendance trends, scheduling gaps, and budget efficiency across 720 campus events.
-```
+I built this project to practice full-stack development in a realistic product setting. The goal was to move beyond a simple static dashboard and build a campus-focused application with real backend features, persistent SQL storage, user authentication, protected routes, event ownership, and RSVP tracking.
